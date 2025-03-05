@@ -2,3 +2,9 @@
 venv/
 data/
 .vscode
+volume/
+*.csv
+*.csv.gz
+jars/*
+__pycache__
+.idea
