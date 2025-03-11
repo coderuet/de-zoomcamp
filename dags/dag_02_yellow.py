@@ -115,28 +115,15 @@ with DAG(
     start_date=datetime(2025, 1, 1),
     dagrun_timeout=timedelta(minutes=25),
     schedule=None,
-    # user_defined_macros={
-    #     "taxi_type": "{{ dag_run.conf.get('taxi_type', 'default') }}",
-    #     "table_name": "public.{{ dag_run.conf.get('taxi_type', 'default') }}_tripdata",
-    #     "staging_table": "public.{{ dag_run.conf.get('taxi_type', 'default') }}_tripdata_staging",
-    # },
 ) as dag:
     taxi_type = "{{ dag_run.conf.get('taxi_type', 'default') }}"
-    table_name = f"public.{taxi_type}_tripdata"
-    staging_table = (
-        "public.{{ dag_run.conf.get('taxi_type', 'default') }}_tripdata_staging"
-    )
+    table_name = f"{taxi_type}_tripdata"
+    staging_table = "{{ dag_run.conf.get('taxi_type', 'default') }}_tripdata_staging"
     year = "{{ dag_run.conf.get('year') }}"
     month = "{{ dag_run.conf.get('month') }}"
     time = f"{year}_{month}"
     output_file = f"/tmp/{taxi_type}_tripdata_{year}-{month}.csv.gz"
     csv_file = output_file.replace(".gz", "")
-    # taxi_type = "{{ dag_run.conf.get('taxi_type') }}"
-    # year = "{{ dag_run.conf.get('year') }}"
-    # month = "{{ dag_run.conf.get('month') }}"
-    # table_name = f"public.{taxi_type}_tripdata"
-    # time = f"{year}_{month}"
-    # staging_table = f"public.{taxi_type}_tripdata_staging"
     # Check connection to postgresql
     download_task = PythonOperator(
         task_id=f"download_data",
@@ -159,15 +146,15 @@ with DAG(
                 CREATE TABLE IF NOT EXISTS { table_name } (
                     unique_row_id          text,
                     filename               text,
-                    VendorID               text,
+                    "VendorID"               text,
                     tpep_pickup_datetime   timestamp,
                     tpep_dropoff_datetime  timestamp,
                     passenger_count        integer,
                     trip_distance          double precision,
-                    RatecodeID             text,
+                    "RatecodeID"             text,
                     store_and_fwd_flag     text,
-                    PULocationID           text,
-                    DOLocationID           text,
+                    "PULocationID"           text,
+                    "DOLocationID"           text,
                     payment_type           integer,
                     fare_amount            double precision,
                     extra                  double precision,
@@ -189,15 +176,15 @@ with DAG(
             CREATE TABLE IF NOT EXISTS { staging_table } (
                 unique_row_id          text,
                 filename               text,
-                VendorID               text,
+                "VendorID"               text,
                 tpep_pickup_datetime   timestamp,
                 tpep_dropoff_datetime  timestamp,
                 passenger_count        integer,
                 trip_distance          double precision,
-                RatecodeID             text,
+                "RatecodeID"             text,
                 store_and_fwd_flag     text,
-                PULocationID           text,
-                DOLocationID           text,
+                "PULocationID"           text,
+                "DOLocationID"           text,
                 payment_type           integer,
                 fare_amount            double precision,
                 extra                  double precision,
@@ -229,8 +216,8 @@ with DAG(
         #     conn_id="postgresql_main_db",
         #     sql=f"""
         #     COPY {staging_table}
-        #         (VendorID,tpep_pickup_datetime,tpep_dropoff_datetime,passenger_count,trip_distance,
-        #         RatecodeID,store_and_fwd_flag,PULocationID,DOLocationID,payment_type,fare_amount,
+        #         ("VendorID",tpep_pickup_datetime,tpep_dropoff_datetime,passenger_count,trip_distance,
+        #         "RatecodeID",store_and_fwd_flag,"PULocationID","DOLocationID",payment_type,fare_amount,
         #         extra,mta_tax,tip_amount,tolls_amount,improvement_surcharge,total_amount,
         #         congestion_surcharge)
         #     FROM '{data_path}' WITH CSV HEADER;
@@ -252,11 +239,11 @@ with DAG(
             UPDATE {staging_table}
             SET
                 unique_row_id = (
-                    COALESCE(CAST(VendorID AS text), '') ||
+                    COALESCE(CAST("VendorID" AS text), '') ||
                     COALESCE(CAST(tpep_pickup_datetime AS text), '') || 
                     COALESCE(CAST(tpep_dropoff_datetime AS text), '') || 
-                    COALESCE(PULocationID, '') || 
-                    COALESCE(DOLocationID, '') || 
+                    COALESCE("PULocationID", '') || 
+                    COALESCE("DOLocationID", '') || 
                     COALESCE(CAST(fare_amount AS text), '') || 
                     COALESCE(CAST(trip_distance AS text), '')
                 ),
@@ -274,15 +261,15 @@ with DAG(
         ON T.unique_row_id = S.unique_row_id
         WHEN NOT MATCHED THEN
             INSERT (
-              unique_row_id, filename, VendorID, tpep_pickup_datetime, tpep_dropoff_datetime,
-              passenger_count, trip_distance, RatecodeID, store_and_fwd_flag, PULocationID,
-              DOLocationID, payment_type, fare_amount, extra, mta_tax, tip_amount, tolls_amount,
+              unique_row_id, filename, "VendorID", tpep_pickup_datetime, tpep_dropoff_datetime,
+              passenger_count, trip_distance, "RatecodeID", store_and_fwd_flag, "PULocationID",
+              "DOLocationID", payment_type, fare_amount, extra, mta_tax, tip_amount, tolls_amount,
               improvement_surcharge, total_amount, congestion_surcharge
             )
             VALUES (
-              S.unique_row_id, S.filename, S.VendorID, S.tpep_pickup_datetime, S.tpep_dropoff_datetime,
-              S.passenger_count, S.trip_distance, S.RatecodeID, S.store_and_fwd_flag, S.PULocationID,
-              S.DOLocationID, S.payment_type, S.fare_amount, S.extra, S.mta_tax, S.tip_amount, S.tolls_amount,
+              S.unique_row_id, S.filename, S."VendorID", S.tpep_pickup_datetime, S.tpep_dropoff_datetime,
+              S.passenger_count, S.trip_distance, S."RatecodeID", S.store_and_fwd_flag, S."PULocationID",
+              S."DOLocationID", S.payment_type, S.fare_amount, S.extra, S.mta_tax, S.tip_amount, S.tolls_amount,
               S.improvement_surcharge, S.total_amount, S.congestion_surcharge
         );
         """,

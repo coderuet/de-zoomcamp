@@ -8,3 +8,9 @@ volume/
 jars/*
 __pycache__
 .idea
+keys/
+.terraform/
+*.tfstate
+*.tfstate.backup
+*.tfvars
+.terraform.lock.hcl
