@@ -24,7 +24,7 @@ BQ_JAR = f"{JARS_PATH}/spark-bigquery-latest_2.12.jar"
 GCS_JAR = f"{JARS_PATH}/gcs-connector-hadoop3-latest.jar"
 with DAG(
     "report_annually",
-    schedule=None,
+    schedule="@yearly",
     start_date=datetime(2025, 1, 1),
     dagrun_timeout=timedelta(minutes=45),
 ) as dag:
