@@ -4,7 +4,7 @@ DC = docker compose
 
 start:
 	@echo "Starting Docker Compose services..."
-	@$(DC) up -d --force-recreate
+	@COMPOSE_BAKE=true $(DC) up -d --force-recreate
 
 stop:
 	@echo "Stopping Docker Compose services..."

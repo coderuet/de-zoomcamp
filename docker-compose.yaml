@@ -100,8 +100,11 @@ services:
       - ./keys/gcp_cred.json:/keys/gcp_cred.json
 
   airflow-worker:
-    <<: *airflow-common
+    # <<: *airflow-common
     command: celery worker
+    build:
+      context: .
+      dockerfile: worker.Dockerfile
     healthcheck:
       # yamllint disable rule:line-length
       test:
@@ -116,6 +119,8 @@ services:
       # Required to handle warm shutdown of the celery workers properly
       # See https://airflow.apache.org/docs/docker-stack/entrypoint.html#signal-propagation
       DUMB_INIT_SETSID: "0"
+      JAVA_HOME: "/usr/lib/jvm/java-17-openjdk-amd64"
+
     restart: always
     depends_on:
       <<: *airflow-common-depends-on
@@ -127,6 +132,7 @@ services:
       - ${AIRFLOW_PROJ_DIR:-.}/config:/opt/airflow/config
       - ${AIRFLOW_PROJ_DIR:-.}/plugins:/opt/airflow/plugins
       - ./keys/gcp_cred.json:/keys/gcp_cred.json
+      - ./jars:/opt/airflow/jars
 
   airflow-triggerer:
     <<: *airflow-common
@@ -257,7 +263,41 @@ services:
       - ./volume/data/:/var/lib/postgresql/data
     ports:
       - "${MAIN_DB_PORT}:5432"
-
+  # dbt-bq-dtc:
+  #   image: ghcr.io/dbt-labs/dbt-bigquery:latest
+  #   entrypoint: ["sh", "-c", "tail -f /dev/null"]
+  #   volumes:
+  #     - ./volume/dbt:/usr/app
+  #     - ./keys/gcp_cred.json:/keys/gcp_cred.json
+  spark-worker:
+    image: bitnami/spark:latest
+    container_name: spark-worker
+    environment:
+      - SPARK_MODE=worker
+      - SPARK_MASTER_URL=${SPARK_CLUSTER}
+      - SPARK_WORKER_MEMORY=4G
+      - SPARK_WORKER_CORES=2
+      - SPARK_RPC_AUTHENTICATION_ENABLED=no
+      - SPARK_RPC_ENCRYPTION_ENABLED=no
+      - SPARK_LOCAL_STORAGE_ENCRYPTION_ENABLED=no
+      - SPARK_SSL_ENABLED=no
+    ports:
+      - "8081:8081" # Worker UI port
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8081"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+    restart: always
+    volumes:
+      - ./spark-data:/opt/bitnami/spark/data
+      - ./keys/gcp_cred.json:/keys/gcp_cred.json
+    command: >
+      bash -c "
+        pip install --no-cache-dir google-api-python-client &&
+        /opt/bitnami/scripts/spark/entrypoint.sh /opt/bitnami/scripts/spark/run.sh
+      "
   ## raise many error,take many time to fix
   ## fix later
   # pgadmin:

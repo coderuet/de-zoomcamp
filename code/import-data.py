@@ -1,6 +1,6 @@
 # rewrite by pyspark
-from config import Config
-from code.pyspark import init_spark, read_file
+from constants.constants import Constants
+from pyspark_utils import init_spark, read_file
 import os, glob, argparse
 from pyspark.sql import DataFrame
 
@@ -10,11 +10,11 @@ BASE_DIR = "/home/thanh-ubuntu/workspace/DE/DE-study/de-zoomcamp/"
 def main(params):
 
     # Get env var
-    port = Config.MAIN_DB_PORT
-    username = Config.MAIN_DB_USERNAME
-    password = Config.MAIN_DB_PASSWORD
-    db_name = Config.MAIN_DB_DATABASE_NAME
-    hostname = Config.MAIN_DB_HOST
+    port = Constants.MAIN_DB_PORT
+    username = Constants.MAIN_DB_USERNAME
+    password = Constants.MAIN_DB_PASSWORD
+    db_name = Constants.MAIN_DB_DATABASE_NAME
+    hostname = Constants.MAIN_DB_HOST
     table = params.table
     JDBC_URL = f"""jdbc:postgresql://{hostname}:{port}/{db_name}"""
     print("JDBC_URL", JDBC_URL)
