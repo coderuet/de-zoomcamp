@@ -14,3 +14,4 @@ keys/
 *.tfstate.backup
 *.tfvars
 .terraform.lock.hcl
+.augmentignore
